@@ -1,0 +1,53 @@
+diff --git a/include/linux/compiler_types.h b/include/linux/compiler_types.h
+index ac3fa37a8..0ecbcb458 100644
+--- a/include/linux/compiler_types.h
++++ b/include/linux/compiler_types.h
+@@ -242,7 +242,7 @@ struct ftrace_likely_data {
+ #endif
+ 
+ #ifdef CONFIG_CC_HAS_ASM_INLINE
+-#define asm_inline asm __inline
++#define asm_inline asm
+ #else
+ #define asm_inline asm
+ #endif
+diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+index e46df0a2d..bb2ea8717 100644
+--- a/scripts/kconfig/Makefile
++++ b/scripts/kconfig/Makefile
+@@ -25,6 +25,35 @@ xconfig: $(obj)/qconf
+ gconfig: $(obj)/gconf
+ 	$(Q)$< $(silent) $(Kconfig)
+ 
++PHONY += scriptconfig iscriptconfig kmenuconfig guiconfig dumpvarsconfig
++
++PYTHONCMD ?= python
++kpython := PYTHONPATH=$(srctree)/Kconfiglib:$$PYTHONPATH $(PYTHONCMD)
++
++ifneq ($(filter scriptconfig,$(MAKECMDGOALS)),)
++ifndef SCRIPT
++$(error Use "make scriptconfig SCRIPT=<path to script> [SCRIPT_ARG=<argument>]")
++endif
++endif
++
++scriptconfig:
++	$(Q)$(kpython) $(SCRIPT) $(Kconfig) $(if $(SCRIPT_ARG),"$(SCRIPT_ARG)")
++
++iscriptconfig:
++	$(Q)$(kpython) -i -c \
++	  "import kconfiglib; \
++	   kconf = kconfiglib.Kconfig('$(Kconfig)'); \
++	   print('A Kconfig instance \'kconf\' for the architecture $(ARCH) has been created.')"
++
++kmenuconfig:
++	$(Q)$(kpython) $(srctree)/Kconfiglib/menuconfig.py $(Kconfig)
++
++guiconfig:
++	$(Q)$(kpython) $(srctree)/Kconfiglib/guiconfig.py $(Kconfig)
++
++dumpvarsconfig:
++	$(Q)$(kpython) $(srctree)/Kconfiglib/examples/dumpvars.py $(Kconfig)
++	
+ menuconfig: $(obj)/mconf
+ 	$(Q)$< $(silent) $(Kconfig)
+ 
